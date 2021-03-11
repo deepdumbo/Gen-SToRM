@@ -13,33 +13,8 @@ import numpy.lib.recfunctions as rf
 from numpy import linalg as LA
 import math
 
-# def tv_loss(var, tv_weight):
-#     h_cur = var[:,:-1,:]
-#     h_lat = var[:,1:,:]
-#     w_cur = var[:,:,:-1]
-#     w_lat = var[:,:,1:]
-#     h_result = h_lat - h_cur
-#     w_result = w_lat - w_cur
-#     h_result = h_result*h_result
-#     w_result = w_result*w_result
-#     result = tv_weight*(torch.sum(h_result) + torch.sum(w_result))
-#     return result
-
 
 def optimize_generator(dop,G,z,params,train_epoch=1,proj_flag=True):
-    
-    f = h5py.File('slice2_500.mat','r')
-    variables = f.items()
-    for var in variables:
-        name = var[0]
-        data = var[1]
-        if type(data) is h5py.Dataset:
-            value = data[()]
-    
-    Imgs = rf.structured_to_unstructured(value) 
-    Imgs = Imgs.transpose((0, 2, 1, 3)) 
-    Orig = Imgs[10:160,:,:,:]
-    Orig = Orig[:,:,:,0] + Orig[:,:,:,1]*1j #150x340x340
 
     lr_g = params['lr_g']
     lr_z = params['lr_z']
@@ -77,17 +52,12 @@ def optimize_generator(dop,G,z,params,train_epoch=1,proj_flag=True):
             G_result_projected = G_result.unsqueeze(1)
         optimizer.zero_grad()
         
-        # G_s = G_result.squeeze().cpu().data.numpy()
-        # G_s = G_s[:,0,:,:] + G_s[:,1,:,:]*1j
-        # G_s = abs(G_s)
-        # G_s = torch.tensor(G_s).cuda()
         
         G_loss = loss(G_result_projected,dop.Atb.to(gpu))  # data conisistency
         G_loss += dop.image_energy(G_result)  # image regularization to zero out regions outside maks
         G_loss +=  G.weightl1norm()    # Netowrk regularization
         # G_loss += G.gradient_penalty(G_result,z.z_)
         G_loss += z.Reg()      # latent variable regularization
-        # G_loss += tv_loss(G_s,0.01)
         G_loss.backward()
         
     
@@ -121,61 +91,6 @@ def optimize_generator(dop,G,z,params,train_epoch=1,proj_flag=True):
         
         G_old = G.state_dict()
         z_old = z.z_.data
-        
-        # #Compute the SER at the last level
-        # z_value = z_old.cpu().detach().numpy().squeeze()
-        # if (np.size(z_value,0)==150):
-        #     recon = G_result[:,:,:,:].squeeze().cpu().data.numpy()
-        #     recon = recon[:,0,:,:] + recon[:,1,:,:]*1j #150x340x340
-        #     SER_sub = 0
-        #     for i in range(150):
-        #         orig_sub = Orig[i,:,:]
-        #         # orig_sub = orig_sub.flatten()
-        #         orig_sub = abs(orig_sub)
-        #         recon_sub = recon[i,:,:]
-        #         recon_sub = abs(recon_sub)
-        #         orig_sub = ((orig_sub - np.amin(orig_sub[:]))/(np.amax(orig_sub[:])-np.amin(orig_sub[:])))*(np.amax(recon_sub[:])+0.08)
-        #         orig_sub = orig_sub.flatten()
-        #         recon_sub = recon_sub.flatten()
-        #         # recon_sub = abs(recon_sub)
-        #         # scaling = np.dot(orig_sub,recon_sub)/np.dot(orig_sub,orig_sub)
-        #         # recon_sub = recon_sub/scaling
-        #         diff = orig_sub - recon_sub
-        #         ser = 20*math.log10(LA.norm(orig_sub)/LA.norm(diff))
-        #         SER_sub = SER_sub + ser
-            
-        #     SER_sub = SER_sub/150
-        #     SER[epoch] = SER_sub
-        # else:
-        #     x = np.arange(0,150)
-        #     nf = np.size(z_value,0)  
-        #     xp = np.arange(0,nf)*150/nf
-        #     zpnew = np.zeros((150,np.size(z_value,1)))
-        #     for i in range(np.size(z_value,1)):
-        #         zpnew[:,i] = np.interp(x, xp, z_value[:,i])
-        #     z_in = torch.FloatTensor(zpnew).view(-1, 2, 1, 1)
-        #     z_in = z_in.cuda()
-        #     G_result = G(z_in)
-        #     recon = G_result[:,:,:,:].squeeze().cpu().data.numpy()
-        #     recon = recon[:,0,:,:] + recon[:,1,:,:]*1j #150x340x340
-        #     SER_sub = 0
-        #     for i in range(150):
-        #         orig_sub = Orig[i,:,:]
-        #         orig_sub = orig_sub.flatten()
-        #         orig_sub = abs(orig_sub)
-        #         scale1 = np.amax(orig_sub[:])
-        #         recon_sub = recon[i,:,:]
-        #         recon_sub = recon_sub.flatten()
-        #         recon_sub = abs(recon_sub)
-        #         scale2 = np.amax(recon_sub[:])
-        #         scaling = scale2/scale1
-        #         recon_sub = recon_sub/scaling
-        #         diff = orig_sub - recon_sub
-        #         ser = 20*math.log10(LA.norm(orig_sub)/LA.norm(diff))
-        #         SER_sub = SER_sub + ser
-            
-        #     SER_sub = SER_sub/150
-        #     SER[epoch] = SER_sub
     
 
         #Display results
