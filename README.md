@@ -7,5 +7,5 @@ Dynamic imaging using a deep generative SToRM (Gen-SToRM) model by Q. Zou, A. Ah
 Link: https://arxiv.org/pdf/2102.00034.pdf
 
 
-### What this code do:
+#### What this code do:
 Main file: gen_storm_main.py
